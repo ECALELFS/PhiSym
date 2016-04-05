@@ -1,4 +1,5 @@
 #include "PhiSym/EcalCalibDataFormats/interface/PhiSymRecHit.h"
+#include "TMath.h"
 
 //**********constructors******************************************************************
 PhiSymRecHit::PhiSymRecHit():
@@ -36,6 +37,20 @@ void PhiSymRecHit::AddHit(float* etValues, float laserCorr)
     }
     for(short i=1; i<N_MISCALIB_VALUES; ++i)        
         etSum_[i] += etValues[i];
+}
+
+void PhiSymRecHit::AddTime(float t)
+{
+   times_.push_back(CompressTime(t));
+}
+
+int16_t PhiSymRecHit::CompressTime(float t)
+{
+   return (int16_t)TMath::Nint(t*1000);
+}
+float PhiSymRecHit::UncompressTime(int16_t t)
+{
+   return float(t)/1000.0f;
 }
 
 void PhiSymRecHit::Reset()

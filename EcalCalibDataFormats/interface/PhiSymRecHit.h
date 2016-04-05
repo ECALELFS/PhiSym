@@ -40,6 +40,9 @@ public:
 
     //---utils---
     void         AddHit(float* etValues, float laserCorr=0);
+    void         AddTime(float t);
+    int16_t      CompressTime(float t);
+    float        UncompressTime(int16_t t);
     void         Reset();
 
     //---operators---
@@ -54,6 +57,8 @@ private:
     float    et2Sum_;
     float    lcSum_;
     float    lc2Sum_;
+    std::vector<int16_t>  times_;
+
 };
 
 typedef std::vector<PhiSymRecHit> PhiSymRecHitCollection;
