@@ -23,6 +23,8 @@
 class PhiSymRecHit
 {
 public:
+    typedef std::vector<int16_t> timevec;
+
     //---ctors---
     PhiSymRecHit();
     PhiSymRecHit(uint32_t id, float* etValues=NULL);
@@ -37,8 +39,16 @@ public:
     inline float    GetSumEt2()          const {return et2Sum_;};
     inline float    GetLCSum()           const {return lcSum_;};
     inline float    GetLC2Sum()          const {return lc2Sum_;};
+    //---getters for time---
+    inline const timevec GetTimes()      const {return times_;};
     float           GetTimeSum()         const;
+    float           GetTimeSum2()         const;
     size_t          GetTimeN()           const;
+    //---getters for time in range---
+    const timevec GetTimes(float low, float hi)    const;
+    float         GetTimeSum(float low, float hi)  const;
+    float         GetTimeSum2(float low, float hi)  const;
+    size_t        GetTimeN(float low, float hi)    const;
 
     //---utils---
     void         AddHit(float* etValues, float laserCorr=0);
@@ -59,7 +69,7 @@ private:
     float    et2Sum_;
     float    lcSum_;
     float    lc2Sum_;
-    std::vector<int16_t>  times_;
+    timevec  times_;
 
 };
 
