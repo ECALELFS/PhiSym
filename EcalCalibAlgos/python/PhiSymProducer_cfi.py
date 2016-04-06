@@ -17,7 +17,7 @@ PhiSymProducer = cms.EDProducer(
     lumisToSum = cms.int32(1),          
     statusThreshold = cms.int32(0),
     recHitFlags = cms.vint32([0]), # only recHits with these flags are accepted for calibration
-    storeTimes = cms.untracked.bool(False),
+    storeTimes = cms.untracked.bool(True),
     makeSpectraTreeEB = cms.untracked.bool(False),
     makeSpectraTreeEE = cms.untracked.bool(False)
 )

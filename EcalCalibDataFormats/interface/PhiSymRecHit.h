@@ -37,12 +37,14 @@ public:
     inline float    GetSumEt2()          const {return et2Sum_;};
     inline float    GetLCSum()           const {return lcSum_;};
     inline float    GetLC2Sum()          const {return lc2Sum_;};
+    float           GetTimeSum()         const;
+    size_t          GetTimeN()           const;
 
     //---utils---
     void         AddHit(float* etValues, float laserCorr=0);
     void         AddTime(float t);
-    int16_t      CompressTime(float t);
-    float        UncompressTime(int16_t t);
+    int16_t      CompressTime(float t) const;
+    float        UncompressTime(int16_t t) const;
     void         Reset();
 
     //---operators---

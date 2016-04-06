@@ -23,6 +23,19 @@ PhiSymRecHit::PhiSymRecHit(uint32_t id, float* etValues):
 PhiSymRecHit::~PhiSymRecHit()
 {}
 
+//**********getters***********************************************************************
+float PhiSymRecHit::GetTimeSum() const
+{
+   float time = 0;
+   for( auto t : times_)
+      time += UncompressTime(t);
+   return time;
+}
+size_t PhiSymRecHit::GetTimeN() const
+{
+   return times_.size();
+}
+
 //**********utils*************************************************************************
 
 void PhiSymRecHit::AddHit(float* etValues, float laserCorr)
@@ -44,11 +57,11 @@ void PhiSymRecHit::AddTime(float t)
    times_.push_back(CompressTime(t));
 }
 
-int16_t PhiSymRecHit::CompressTime(float t)
+int16_t PhiSymRecHit::CompressTime(float t) const
 {
    return (int16_t)TMath::Nint(t*1000);
 }
-float PhiSymRecHit::UncompressTime(int16_t t)
+float PhiSymRecHit::UncompressTime(int16_t t) const
 {
    return float(t)/1000.0f;
 }
