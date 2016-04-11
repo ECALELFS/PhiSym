@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "DataFormats/DetId/interface/DetId.h"
+#include "PhiSym/EcalCalibDataFormats/interface/PhiSymTimeCollection.h"
 
 //---define the number of allowed mis-calibrated values for etSum_ (+ the central value)
 #define N_MISCALIB_VALUES 11
@@ -39,20 +40,9 @@ public:
     inline float    GetSumEt2()          const {return et2Sum_;};
     inline float    GetLCSum()           const {return lcSum_;};
     inline float    GetLC2Sum()          const {return lc2Sum_;};
-    //---getters for time---
-    inline const timevec GetTimes()      const {return times_;};
-    float           GetTimeSum()         const;
-    float           GetTimeSum2()         const;
-    size_t          GetTimeN()           const;
-    //---getters for time in range---
-    const timevec GetTimes(float low, float hi)    const;
-    float         GetTimeSum(float low, float hi)  const;
-    float         GetTimeSum2(float low, float hi)  const;
-    size_t        GetTimeN(float low, float hi)    const;
 
     //---utils---
     void         AddHit(float* etValues, float laserCorr=0);
-    void         AddTime(float t);
     int16_t      CompressTime(float t) const;
     float        UncompressTime(int16_t t) const;
     void         Reset();
@@ -60,6 +50,10 @@ public:
     //---operators---
     PhiSymRecHit&        operator+=(const PhiSymRecHit& rhs);
     friend std::ostream& operator<<(std::ostream& out, const PhiSymRecHit& obj);
+
+    //---Public Members---
+
+    PhiSymTimeCollection time_collection;
 
 private:
 
@@ -69,8 +63,6 @@ private:
     float    et2Sum_;
     float    lcSum_;
     float    lc2Sum_;
-    timevec  times_;
-
 };
 
 typedef std::vector<PhiSymRecHit> PhiSymRecHitCollection;

@@ -1,6 +1,7 @@
 #include "DataFormats/Common/interface/Wrapper.h"
 
 #include "PhiSym/EcalCalibDataFormats/interface/PhiSymRecHit.h"
+#include "PhiSym/EcalCalibDataFormats/interface/PhiSymTimeCollection.h"
 #include "PhiSym/EcalCalibDataFormats/interface/PhiSymInfo.h"
 #include "PhiSym/EcalCalibDataFormats/interface/CalibrationFile.h"
 #include "PhiSym/EcalCalibDataFormats/interface/PhiSymFile.h"
@@ -25,6 +26,9 @@ namespace
         CrystalsEBTree dummy42;
         CrystalsEETree dummy43;
         CalibrationFile dummy44;
+
+        PhiSymTimeCollection dummy51;
+        edm::Wrapper<PhiSymTimeCollection> dummy52;
     };
 
 }

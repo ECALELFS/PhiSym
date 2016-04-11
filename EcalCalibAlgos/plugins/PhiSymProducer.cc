@@ -329,8 +329,8 @@ void PhiSymProducer::produce(edm::Event& event, const edm::EventSetup& setup)
         recHitCollEB_->at(ebHit.denseIndex()).AddHit(etValues,
         					     laser.product()->getLaserCorrection(recHit.id(), evtTimeStamp));
      
-        if(storeTimes_ && recHit.checkFlags(recHitFlags_))
-           recHitCollEB_->at(ebHit.denseIndex()).AddTime(recHit.time());
+        if(storeTimes_ && etValues[0] && recHit.checkFlags(recHitFlags_))
+           recHitCollEB_->at(ebHit.denseIndex()).time_collection.AddTime(recHit.time());
 
         //---fill the plain tree
         if(makeSpectraTreeEB_)
@@ -391,7 +391,7 @@ void PhiSymProducer::produce(edm::Event& event, const edm::EventSetup& setup)
         					     laser.product()->getLaserCorrection(recHit.id(), evtTimeStamp));
 
         if(storeTimes_ && recHit.checkFlags(recHitFlags_))
-           recHitCollEE_->at(eeHit.denseIndex()).AddTime(recHit.time());
+           recHitCollEE_->at(eeHit.denseIndex()).time_collection.AddTime(recHit.time());
      
         //---fill the plain tree
         if(makeSpectraTreeEE_)

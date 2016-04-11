@@ -65,8 +65,8 @@ for i,lumi in enumerate(lumis):
         histos["EB_OccupancyMap"].Fill(myId.iphi(),myId.ieta(),hit.GetNhits())
         histos["EB_EtMap"].Fill(myId.iphi(),myId.ieta(),hit.GetSumEt(0))
         histos["EB_LCSumMap"].Fill(myId.iphi(),myId.ieta(),hit.GetLCSum())
-        histos["EB_TimeSum"].Fill(myId.iphi(),myId.ieta(),hit.GetTimeSum())
-        histos["EB_TimeN"].Fill(myId.iphi(),myId.ieta(),hit.GetTimeN())
+        histos["EB_TimeSum"].Fill(myId.iphi(),myId.ieta(),hit.time_collection.GetTimeSum())
+        histos["EB_TimeN"].Fill(myId.iphi(),myId.ieta(),hit.time_collection.GetTimeN())
     for hit in phiSymRecHitsEE:
         myId=ROOT.EEDetId(hit.GetRawId())
         if (myId.zside()<0):
