@@ -18,7 +18,8 @@ from DataFormats.FWLite import Handle, Events, Lumis
 
 # open file (you can use 'edmFileUtil -d /store/whatever.root' to get the physical file name)
 #lumis = Lumis("file:phisym.root")
-lumis = Lumis("root://xrootd-cms.infn.it//store/user/spigazzi/AlCaPhiSym/crab_PHISYM-CMSSW_741-weights-GR_P_V56-Run2015B_v1/150714_150558/0000/phisym_weights_1lumis_13.root")
+#lumis = Lumis("root://xrootd-cms.infn.it//store/user/spigazzi/AlCaPhiSym/crab_PHISYM-CMSSW_741-weights-GR_P_V56-Run2015B_v1/150714_150558/0000/phisym_weights_1lumis_13.root")
+lumis = Lumis("file:phisym_weights_1lumis_withtime_numEvent500000.root")
 
 handlePhiSymInfo  = Handle ("std::vector<PhiSymInfo>")
 handlePhiSymRecHitsEB  = Handle ("std::vector<PhiSymRecHit>")
@@ -29,20 +30,17 @@ labelPhiSymRecHitsEE = ("PhiSymProducer","EE")
 
 histos={}
 
-histos["EB_OccupancyMap"]=ROOT.TH2F("EB_OccupancyMap","EB_OccupancyMap",360,0.5,360.5,171,-85.5,85.5)
-histos["EB_EtMap"]=ROOT.TH2F("EB_EtMap","EB_EtMap",360,0.5,360.5,171,-85.5,85.5)
-histos["EB_EtMeanMap"]=ROOT.TH2F("EB_EtMeanMap","EB_EtMeanMap",360,0.5,360.5,171,-85.5,85.5)
-histos["EB_LCSumMap"]=ROOT.TH2F("EB_LCSumMap","EB_LCSumMap",360,0.5,360.5,171,-85.5,85.5)
-histos["EB_LCMap"]=ROOT.TH2F("EB_LCMap","EB_LCMap",360,0.5,360.5,171,-85.5,85.5)
 histos["EB_TimeMean"]=ROOT.TH2F("EB_TimeMean","EB_TimeMean",360,0.5,360.5,171,-85.5,85.5)
 histos["EB_TimeSum"]=ROOT.TH2F("EB_TimeSum","EB_TimeSum",360,0.5,360.5,171,-85.5,85.5)
 histos["EB_TimeN"]=ROOT.TH2F("EB_TimeN","EB_TimeN",360,0.5,360.5,171,-85.5,85.5)
 
-histos["EEM_OccupancyMap"]=ROOT.TH2F("EEM_OccupancyMap","EEM_OccupancyMap",100,0.5,100.5,100,0.5,100.5)
-histos["EEM_EtMap"]=ROOT.TH2F("EEM_EtMap","EEM_EtMap",100,0.5,100.5,100,0.5,100.5)
+histos["EEM_TimeMean"]=ROOT.TH2F("EEM_TimeMean","EEM_TimeMean",100,0.5,100.5,100,0.5,100.5)
+histos["EEM_TimeSum"]=ROOT.TH2F("EEM_TimeSum","EEM_TimeSum",100,0.5,100.5,100,0.5,100.5)
+histos["EEM_TimeN"]=ROOT.TH2F("EEM_TimeN","EEM_TimeN",100,0.5,100.5,100,0.5,100.5)
 
-histos["EEP_OccupancyMap"]=ROOT.TH2F("EEP_OccupancyMap","EEP_OccupancyMap",100,0.5,100.5,100,0.5,100.5)
-histos["EEP_EtMap"]=ROOT.TH2F("EEP_EtMap","EEP_EtMap",100,0.5,100.5,100,0.5,100.5)
+histos["EEP_TimeMean"]=ROOT.TH2F("EEP_TimeMean","EEP_TimeMean",100,0.5,100.5,100,0.5,100.5)
+histos["EEP_TimeSum"]=ROOT.TH2F("EEP_TimeSum","EEP_TimeSum",100,0.5,100.5,100,0.5,100.5)
+histos["EEP_TimeN"]=ROOT.TH2F("EEP_TimeN","EEP_TimeN",100,0.5,100.5,100,0.5,100.5)
 
 for i,lumi in enumerate(lumis):
     print "====>"
@@ -62,32 +60,37 @@ for i,lumi in enumerate(lumis):
 
     for hit in phiSymRecHitsEB:
         myId=ROOT.EBDetId(hit.GetRawId())
-        histos["EB_OccupancyMap"].Fill(myId.iphi(),myId.ieta(),hit.GetNhits())
-        histos["EB_EtMap"].Fill(myId.iphi(),myId.ieta(),hit.GetSumEt(0))
-        histos["EB_LCSumMap"].Fill(myId.iphi(),myId.ieta(),hit.GetLCSum())
-        histos["EB_TimeSum"].Fill(myId.iphi(),myId.ieta(),hit.time_collection.GetTimeSum())
-        histos["EB_TimeN"].Fill(myId.iphi(),myId.ieta(),hit.time_collection.GetTimeN())
+        histos["EB_TimeSum"].Fill(myId.iphi(),myId.ieta(),hit.GetTimeSum())
+        histos["EB_TimeN"].Fill(myId.iphi(),myId.ieta(),hit.GetTimeN())
     for hit in phiSymRecHitsEE:
         myId=ROOT.EEDetId(hit.GetRawId())
         if (myId.zside()<0):
-            histos["EEM_OccupancyMap"].Fill(myId.ix(),myId.iy(),hit.GetNhits())
-            histos["EEM_EtMap"].Fill(myId.ix(),myId.iy(),hit.GetSumEt(0))
+            histos["EEM_TimeSum"].Fill(myId.ix(),myId.iy(),hit.GetTimeSum())
+            histos["EEM_TimeN"].Fill(myId.ix(),myId.iy(),hit.GetTimeN())
         else:
-            histos["EEP_OccupancyMap"].Fill(myId.ix(),myId.iy(),hit.GetNhits())
-            histos["EEP_EtMap"].Fill(myId.ix(),myId.iy(),hit.GetSumEt(0))
+            histos["EEP_TimeSum"].Fill(myId.ix(),myId.iy(),hit.GetTimeSum())
+            histos["EEP_TimeN"].Fill(myId.ix(),myId.iy(),hit.GetTimeN())
 
 for iPhi in range(1, 361):
     for iEta in range(1, 172):
-        iBin = histos["EB_LCMap"].GetBin(iPhi, iEta)
-        nHits = histos["EB_OccupancyMap"].GetBinContent(iBin)
+        iBin = histos["EB_TimeN"].GetBin(iPhi, iEta)
         nTimeHits = histos["EB_TimeN"].GetBinContent(iBin)
-        if nHits > 0:
-            histos["EB_EtMeanMap"].SetBinContent(iPhi, iEta, histos["EB_EtMap"].GetBinContent(iBin)/nHits)
-            histos["EB_LCMap"].SetBinContent(iPhi, iEta, histos["EB_LCSumMap"].GetBinContent(iBin)/nHits)
         if nTimeHits > 0:
             histos["EB_TimeMean"].SetBinContent(iPhi, iEta, histos["EB_TimeSum"].GetBinContent(iBin)/nTimeHits)
+
+for ix in range(1, 101):
+    for iy in range(1, 101):
+        iBin = histos["EEP_TimeN"].GetBin(ix, iy)
+        nTimeHits = histos["EEP_TimeN"].GetBinContent(iBin)
+        if nTimeHits > 0:
+            histos["EEP_TimeMean"].SetBinContent(ix, iy, histos["EEP_TimeSum"].GetBinContent(iBin)/nTimeHits)
+
+        iBin = histos["EEM_TimeN"].GetBin(ix, iy)
+        nTimeHits = histos["EEM_TimeN"].GetBinContent(iBin)
+        if nTimeHits > 0:
+            histos["EEM_TimeMean"].SetBinContent(ix, iy, histos["EEM_TimeSum"].GetBinContent(iBin)/nTimeHits)
             
-outFile=ROOT.TFile("phiSymStreamCheck.root","RECREATE")
+outFile=ROOT.TFile("phiSymTimeAnalysis.root","RECREATE")
 for histo in histos.keys():
     histos[histo].Write()
 outFile.Write()

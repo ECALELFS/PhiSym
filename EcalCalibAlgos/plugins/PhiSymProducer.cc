@@ -80,6 +80,9 @@ private:
     int            lumisToSum_;
     int            statusThreshold_;
     int            nLumis_;
+    std::vector<int> recHitFlags_;
+    bool           storeTimes_;
+
     //---geometry
     EcalRingCalibrationTools       calibRing_;
     static const short             kNRingsEB = EcalRingCalibrationTools::N_RING_BARREL;
@@ -118,6 +121,8 @@ PhiSymProducer::PhiSymProducer(const edm::ParameterSet& pSet):
     lumisToSum_(pSet.getParameter<int>("lumisToSum")),
     statusThreshold_(pSet.getParameter<int>("statusThreshold")),
     nLumis_(0),
+    recHitFlags_(pSet.getParameter<std::vector<int> >("recHitFlags")),
+    storeTimes_(pSet.getUntrackedParameter<bool>("storeTimes")),
     makeSpectraTreeEB_(pSet.getUntrackedParameter<bool>("makeSpectraTreeEB")),
     makeSpectraTreeEE_(pSet.getUntrackedParameter<bool>("makeSpectraTreeEE"))
 {    
@@ -327,6 +332,9 @@ void PhiSymProducer::produce(edm::Event& event, const edm::EventSetup& setup)
         recHitCollEB_->at(ebHit.denseIndex()).AddHit(etValues,
         					     laser.product()->getLaserCorrection(recHit.id(), evtTimeStamp));
      
+        if(storeTimes_ && etValues[0] && recHit.checkFlags(recHitFlags_))
+           recHitCollEB_->at(ebHit.denseIndex()).time_collection.AddTime(recHit.time());
+
         //---fill the plain tree
         if(makeSpectraTreeEB_)
         {
@@ -384,6 +392,9 @@ void PhiSymProducer::produce(edm::Event& event, const edm::EventSetup& setup)
         //---update the rechHit sumEt
         recHitCollEE_->at(eeHit.denseIndex()).AddHit(etValues,
         					     laser.product()->getLaserCorrection(recHit.id(), evtTimeStamp));
+
+        if(storeTimes_ && recHit.checkFlags(recHitFlags_))
+           recHitCollEE_->at(eeHit.denseIndex()).time_collection.AddTime(recHit.time());
      
         //---fill the plain tree
         if(makeSpectraTreeEE_)

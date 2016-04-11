@@ -4,7 +4,7 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 
 # parse commad line options
 options = VarParsing('analysis')
-options.maxEvents = -1
+options.maxEvents = 50000
 options.outputFile = 'phisym_weights_1lumis.root'
 options.parseArguments()
 
@@ -29,7 +29,7 @@ process.MessageLogger.cerr.default = cms.untracked.PSet(
 
 # import of standard configurations
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50000)
+    input = cms.untracked.int32(options.maxEvents)
 )
 
 # skip bad events

@@ -1,4 +1,5 @@
 #include "PhiSym/EcalCalibDataFormats/interface/PhiSymRecHit.h"
+#include "TMath.h"
 
 //**********constructors******************************************************************
 PhiSymRecHit::PhiSymRecHit():
@@ -46,6 +47,7 @@ void PhiSymRecHit::Reset()
     lc2Sum_ = 0;
     for(short i=0; i<N_MISCALIB_VALUES; ++i)
         etSum_[i] = 0;
+    time_collection.Reset();
 }
 
 //**********operators*********************************************************************
@@ -61,6 +63,8 @@ PhiSymRecHit& PhiSymRecHit::operator+=(const PhiSymRecHit& rhs)
     for(short i=0; i<N_MISCALIB_VALUES; ++i)
         etSum_[i] += rhs.GetSumEt(i);
 
+    for(auto t : rhs.time_collection.GetTimes())
+       this->time_collection.AddTime(t);
     return *this;
 }
 
@@ -75,6 +79,7 @@ std::ostream& operator<<(std::ostream& out, const PhiSymRecHit& obj)
     out << std::setw(20) << "sumEt2: " << obj.GetSumEt2() << std::endl;
     out << std::setw(20) << "laser-corr sum: " << obj.GetLCSum() << std::endl;
     out << std::setw(20) << "laser-corr^2 sum: " << obj.GetLC2Sum() << std::endl;
+    out << obj.time_collection;
     out << std::endl;
     
     return out;

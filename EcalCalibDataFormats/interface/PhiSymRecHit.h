@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "DataFormats/DetId/interface/DetId.h"
+#include "PhiSym/EcalCalibDataFormats/interface/PhiSymTimeCollection.h"
 
 //---define the number of allowed mis-calibrated values for etSum_ (+ the central value)
 #define N_MISCALIB_VALUES 11
@@ -23,6 +24,8 @@
 class PhiSymRecHit
 {
 public:
+    typedef std::vector<int16_t> timevec;
+
     //---ctors---
     PhiSymRecHit();
     PhiSymRecHit(uint32_t id, float* etValues=NULL);
@@ -40,11 +43,17 @@ public:
 
     //---utils---
     void         AddHit(float* etValues, float laserCorr=0);
+    int16_t      CompressTime(float t) const;
+    float        UncompressTime(int16_t t) const;
     void         Reset();
 
     //---operators---
     PhiSymRecHit&        operator+=(const PhiSymRecHit& rhs);
     friend std::ostream& operator<<(std::ostream& out, const PhiSymRecHit& obj);
+
+    //---Public Members---
+
+    PhiSymTimeCollection time_collection;
 
 private:
 

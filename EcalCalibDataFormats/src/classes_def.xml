@@ -13,4 +13,7 @@
   <class name="CrystalsEBTree"/>
   <class name="CrystalsEETree"/>
   <class name="CalibrationFile"/>
+
+  <class name="PhiSymTimeCollection"/>
+  <class name="edm::Wrapper<PhiSymTimeCollection>"/>
 </lcgdict>
