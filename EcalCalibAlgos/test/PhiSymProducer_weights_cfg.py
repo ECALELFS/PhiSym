@@ -5,7 +5,7 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 # parse commad line options
 options = VarParsing('analysis')
 options.maxEvents = -1
-options.outputFile = 'phisym_multifit_1lumis.root'
+options.outputFile = 'phisym_weights_1lumis.root'
 options.parseArguments()
 
 process=cms.Process("PHISYM")
@@ -39,13 +39,11 @@ process.options = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("PoolSource",
-#                             inputCommands = cms.untracked.vstring(
-#                                 'keep *',
-#                                 'drop *_hltEcalDigis_*_*',
-#                                 'drop *_hltTriggerSummaryAOD_*_*'
-#                             ),
                             fileNames = cms.untracked.vstring(
-                                "/store/data/Commissioning2016/AlCaPhiSym/RAW/v1/000/268/930/00000/D624B590-A2FD-E511-B7AD-02163E011AEE.root"
+                                "root://cms-xrd-global.cern.ch//store/data/Run2016H/AlCaPhiSym/RAW/v1/000/281/110/00000/02780885-647E-E611-AE36-02163E0140F5.root"
+                                #"root://cms-xrd-global.cern.ch//store/data/Run2016G/AlCaPhiSym/RAW/v1/000/278/815/00000/0A63C6B5-0D62-E611-88E8-02163E011FA4.root"
+                                #"/store/data/Commissioning2016/AlCaPhiSym/RAW/v1/000/268/930/00000/D624B590-A2FD-E511-B7AD-02163E011AEE.root"
+                                #"/store/data/Run2015A/AlCaPhiSym/RAW/v1/000/247/720/00000/4C0AF78B-4810-E511-8C09-02163E0143CB.root"
                                 #"root://cmsxrootd-site.fnal.gov//store/data/Run2015B/AlCaPhiSym/RAW/v1/000/251/562/00000/0014158C-7728-E511-8847-02163E0122C2.root",
 ))
 
@@ -56,31 +54,9 @@ process.configurationMetadata = cms.untracked.PSet(
     name = cms.untracked.string('PhiSymProducer')
 )
 
-isStream=True
-runMultiFit=True
-isBX50ns=False
-
-if (runMultiFit):
-    if (isBX50ns):
-        process.ecalMultiFitUncalibRecHit.algoPSet = cms.PSet(
-            useLumiInfoRunHeader = cms.bool(False),
-            activeBXs = cms.vint32(-4,-2,0,2,4)
-        )
-    else:
-        process.ecalMultiFitUncalibRecHit.algoPSet = cms.PSet(
-            useLumiInfoRunHeader = cms.bool(False),
-            activeBXs = cms.vint32(-5,-4,-3,-2,-1,0,1,2,3,4)
-        ) 
-
 #ecalUncalibRecHit
-if (isStream):
-    process.ecalUncalibRecHit.EBdigiCollection = cms.InputTag("hltEcalPhiSymFilter","phiSymEcalDigisEB")
-    process.ecalUncalibRecHit.EEdigiCollection = cms.InputTag("hltEcalPhiSymFilter","phiSymEcalDigisEE")
-
-#ecalMultiFitUncalibRecHit
-if (isStream):
-    process.ecalMultiFitUncalibRecHit.EBdigiCollection = cms.InputTag("hltEcalPhiSymFilter","phiSymEcalDigisEB")
-    process.ecalMultiFitUncalibRecHit.EEdigiCollection = cms.InputTag("hltEcalPhiSymFilter","phiSymEcalDigisEE")
+process.ecalUncalibRecHit.EBdigiCollection = cms.InputTag("hltEcalPhiSymFilter","phiSymEcalDigisEB")
+process.ecalUncalibRecHit.EEdigiCollection = cms.InputTag("hltEcalPhiSymFilter","phiSymEcalDigisEE")
 
 #ecalRecHit (no ricovery)
 process.ecalRecHit.killDeadChannels = cms.bool( False )
@@ -90,14 +66,15 @@ process.ecalRecHit.recoverEBFE = cms.bool( False )
 process.ecalRecHit.recoverEEFE = cms.bool( False )
 process.ecalRecHit.recoverEEIsolatedChannels = cms.bool( False )
 process.ecalRecHit.recoverEBIsolatedChannels = cms.bool( False )
-if (not runMultiFit):
-    process.ecalRecHit.EBuncalibRecHitCollection = cms.InputTag("ecalUncalibRecHit","EcalUncalibRecHitsEB")
-    process.ecalRecHit.EEuncalibRecHitCollection = cms.InputTag("ecalUncalibRecHit","EcalUncalibRecHitsEE")
+process.ecalRecHit.EBuncalibRecHitCollection = cms.InputTag("ecalUncalibRecHit","EcalUncalibRecHitsEB")
+process.ecalRecHit.EEuncalibRecHitCollection = cms.InputTag("ecalUncalibRecHit","EcalUncalibRecHitsEE")
 
 # PHISYM producer
 process.load('PhiSym.EcalCalibAlgos.PhiSymProducer_cfi')
-#process.PhiSymProducer.makeSpectraTreeEB = True
-#process.PhiSymProducer.makeSpectraTreeEE = True
+# process.PhiSymProducer.makeSpectraTreeEB = True
+# process.PhiSymProducer.makeSpectraTreeEE = True
+process.PhiSymProducer.eThreshold_barrel = 0.9
+process.PhiSymProducer.thrEEmod = 14.
 
 # Output definition
 PHISYM_output_commands = cms.untracked.vstring(
@@ -118,25 +95,59 @@ from CondCore.DBCommon.CondDBSetup_cfi import *
 process.GlobalTag = cms.ESSource("PoolDBESSource",
                                  CondDBSetup,
                                  connect = cms.string('frontier://FrontierProd/CMS_CONDITIONS'),
-                                 globaltag = cms.string('80X_dataRun2_Prompt_v4')
+                                 globaltag = cms.string('80X_dataRun2_2016LegacyRepro_Candidate_v2')
 )
 
-# SCHEDULE
-if (not runMultiFit):
-    process.reconstruction_step = cms.Sequence( process.ecalUncalibRecHit + process.ecalRecHit )
-else:
-    process.reconstruction_step = cms.Sequence( process.ecalMultiFitUncalibRecHit + process.ecalRecHit )
+### APD gain loss due to dark current corrections (for 2016 legacy ReReco)
+process.GlobalTag.toGet = cms.VPSet(
+    cms.PSet(record = cms.string("EcalLinearCorrectionsRcd"),
+             tag = cms.string("EcalLinearCorrections_from2011_offline"),
+             connect = cms.string("frontier://FrontierPrep/CMS_CONDITIONS"),
+         )
+)       
 
-if (isStream):
-    process.p = cms.Path(process.reconstruction_step)
-    process.p *= process.offlineBeamSpot
-    process.p *= process.PhiSymProducer
-else:
-    process.p = cms.Path(process.RawToDigi) 
-    process.p *= process.L1Reco
-    process.p *= process.reconstruction_step
-    process.p *= process.offlineBeamSpot
-    process.p *= process.PhiSymProducer
+### Test E/p PN corrections for 2016 legac
+process.GlobalTag.toGet = cms.VPSet(
+    cms.PSet(record = cms.string("EcalIntercalibConstantsRcd"),
+             tag = cms.string("EcalIntercalibConstants_Cal_Mar2017_PNcorrection_eop_v2"),
+             connect = cms.string('frontier://FrontierPrep/CMS_CONDITIONS')
+         )
+)
+
+### New alpha tag from 2016 B and C
+# process.GlobalTag.toGet = cms.VPSet(
+#     cms.PSet(record = cms.string("EcalLaserAlphasRcd"),
+#              tag = cms.string("EcalLaserAlphas_EFlow_3sigma"),
+#              connect = cms.string("frontier://FrontierPrep/CMS_CONDITIONS")
+#          )
+#      )
+
+### Custum alpha tag from 2012
+# process.GlobalTag.toGet = cms.VPSet(
+#     cms.PSet(record = cms.string("EcalLaserAlphasRcd"),
+#              tag = cms.string("alphaTest"),
+#              connect = cms.string("sqlite_file:alphas_eflow2012.db")
+#          )
+#     )
+
+### Force tags: examples
+# process.GlobalTag.toGet = cms.VPSet(
+#     cms.PSet(record = cms.string("EcalADCToGeVConstantRcd"),
+#              tag = cms.string("EcalADCToGeVConstant_2016_Bon"),
+#              connect = cms.string("sqlite_file:EcalADCToGeVConstant_2016_Bon.db")
+#          ),
+#     # cms.PSet(record = cms.string("EcalLaserAPDPNRatiosRcd"),
+#     #          tag = cms.string("EcalLaserAPDPNRatios_offline_2016"),
+#     #          connect = cms.string("frontier://FrontierPrep/CMS_CONDITIONS")
+#     #      )
+# )
+
+# SCHEDULE
+process.reconstruction_step = cms.Sequence( process.ecalUncalibRecHit + process.ecalRecHit )
+
+process.p = cms.Path(process.reconstruction_step)
+process.p *= process.offlineBeamSpot
+process.p *= process.PhiSymProducer
 
 process.RECOSIMoutput_step = cms.EndPath(process.RECOSIMoutput)
 process.schedule = cms.Schedule(process.p, process.RECOSIMoutput_step)

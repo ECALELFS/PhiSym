@@ -4,13 +4,14 @@ import sys
 import re
 import time
 import argparse
+import math
 oldargv = sys.argv[:]
 sys.argv = [ '-b-' ]
 import ROOT
 ROOT.gROOT.SetBatch(True)
 sys.argv = oldargv
 
-from PhiSym.EcalCalibAlgos.EcalCalibAnalysis import *
+#from PhiSym.EcalCalibAlgos.EcalCalibAnalysis import *
 
 parser = argparse.ArgumentParser (description = 'Dump PhiSym IC correction from a ROOT file')
 parser.add_argument('inputfile' , default="phisym_intercalibs.root", help='analyze this file')
@@ -26,7 +27,7 @@ opts = parser.parse_args ()
 # Load the CalibrationFile format
 ROOT.gSystem.Load("libDataFormatsEcalDetId.so");
 ROOT.gSystem.Load("libPhiSymEcalCalibDataFormats.so");
-ROOT.AutoLibraryLoader.enable()
+ROOT.FWLiteEnabler.enable()
 
 # Get the crystals trees
 inFile = ROOT.TFile(opts.inputfile)
@@ -101,14 +102,15 @@ while eeTree.NextEntry():
     eeN[index] = eeTree.rec_hit.GetNhits()
 
 # read correction file if specified
-with open(opts.correctionsFile) as corrections:
-    channels = corrections.readlines()
-    for channel in channels:
-        tokens = channel.split()
-        if int(tokens[2]) == 0:
-            ebCorr[ROOT.EBDetId(int(tokens[0]), int(tokens[1])).hashedIndex()] = float(tokens[3])
-        elif ROOT.EEDetId.validDetId(int(tokens[0]), int(tokens[1]), int(tokens[2])):
-            eeCorr[ROOT.EEDetId(int(tokens[0]), int(tokens[1]), int(tokens[2])).hashedIndex()] = float(tokens[3])
+if opts.correctionsFile != "":
+    with open(opts.correctionsFile) as corrections:
+        channels = corrections.readlines()
+        for channel in channels:
+            tokens = channel.split()
+            if int(tokens[2]) == 0:
+                ebCorr[ROOT.EBDetId(int(tokens[0]), int(tokens[1])).hashedIndex()] = float(tokens[3])
+            elif ROOT.EEDetId.validDetId(int(tokens[0]), int(tokens[1]), int(tokens[2])):
+                eeCorr[ROOT.EEDetId(int(tokens[0]), int(tokens[1]), int(tokens[2])).hashedIndex()] = float(tokens[3])
 
 # write the XML file
 container = ET.Element("EcalFloatCondObjectContainer")
@@ -131,7 +133,7 @@ for index in range(61200):
     if ebICerr[index] == 999:
         err = 999
     else:
-        err = sqrt(ebICerr[index]*ebICerr[index] + ebICsys[index]*ebICsys[index])
+        err = math.sqrt(ebICerr[index]*ebICerr[index] + ebICsys[index]*ebICsys[index])
 
     cell = ET.SubElement(container, "cell", iEta=str(ieta), iPhi=str(iphi))
     ET.SubElement(cell, "Value").text = str(ebIC[index]*ebCorr[index])
@@ -148,7 +150,7 @@ for index in range(14648):
     if eeICerr[index] == 999:
         err = 999
     else:
-        err = sqrt(eeICerr[index]*eeICerr[index] + eeICsys[index]*eeICsys[index])
+        err = math.sqrt(eeICerr[index]*eeICerr[index] + eeICsys[index]*eeICsys[index])
 
     cell = ET.SubElement(container, "cell", ix=str(ix), iy=str(iy), zside=str(zside))
     ET.SubElement(cell, "Value").text = str(eeIC[index]*eeCorr[index])

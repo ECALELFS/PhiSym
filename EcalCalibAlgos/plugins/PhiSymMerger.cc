@@ -11,6 +11,7 @@
 #include "TGraphErrors.h"
 #include "TF1.h"
 
+#include "FWCore/Utilities/interface/BranchType.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
@@ -87,7 +88,11 @@ private:
     static const short kNRingsEB = EcalRingCalibrationTools::N_RING_BARREL;
     static const short kNRingsEE = EcalRingCalibrationTools::N_RING_ENDCAP;
     PhiSymRecHit ebXstals_[EBDetId::kSizeForDenseIndexing];
+    PhiSymRecHit ebXstalsEven_[EBDetId::kSizeForDenseIndexing];
+    PhiSymRecHit ebXstalsOdd_[EBDetId::kSizeForDenseIndexing];
     PhiSymRecHit eeXstals_[EEDetId::kSizeForDenseIndexing];
+    PhiSymRecHit eeXstalsEven_[EEDetId::kSizeForDenseIndexing];
+    PhiSymRecHit eeXstalsOdd_[EEDetId::kSizeForDenseIndexing];
 
     //---outputs
     auto_ptr<CalibrationFile> outFile_;
@@ -96,9 +101,9 @@ private:
 };
 
 PhiSymMerger::PhiSymMerger(const edm::ParameterSet& pSet):    
-    infoToken_(consumes<PhiSymInfoCollection>(pSet.getUntrackedParameter<edm::InputTag>("infoTag"))),
-    recHitEBToken_(consumes<PhiSymRecHitCollection>(pSet.getUntrackedParameter<edm::InputTag>("recHitEBTag"))),
-    recHitEEToken_(consumes<PhiSymRecHitCollection>(pSet.getUntrackedParameter<edm::InputTag>("recHitEETag"))),
+    infoToken_(consumes<PhiSymInfoCollection, edm::BranchType::InLumi>(pSet.getUntrackedParameter<edm::InputTag>("infoTag"))),
+    recHitEBToken_(consumes<PhiSymRecHitCollection, edm::BranchType::InLumi>(pSet.getUntrackedParameter<edm::InputTag>("recHitEBTag"))),
+    recHitEEToken_(consumes<PhiSymRecHitCollection, edm::BranchType::InLumi>(pSet.getUntrackedParameter<edm::InputTag>("recHitEETag"))),
     blocksToSum_(pSet.getUntrackedParameter<int>("blocksToSum")),
     nSummedLumis_(1),
     nMisCalib_(-1),
@@ -112,36 +117,44 @@ PhiSymMerger::PhiSymMerger(const edm::ParameterSet& pSet):
 
 void PhiSymMerger::beginJob()
 {
-    //---red list of IOV and add underflow and overflow IOVs
-    TFile* file;
-    if(!(file = TFile::Open(iovFile_.c_str(), "READ")))
-        cout << "ERROR: IOVmap file not found" << endl;
-    TTree* map = (TTree*)file->Get("outTree_barl");
-    int firstRun, lastRun;
-    int firstLumi, lastLumi;
-    double avg_time;
-    map->SetBranchAddress("firstRun", &firstRun);
-    map->SetBranchAddress("lastRun", &lastRun);
-    map->SetBranchAddress("firstLumi", &firstLumi);
-    map->SetBranchAddress("lastLumi", &lastLumi);
-    map->SetBranchAddress("unixTimeMean", &avg_time);
-    for(int iEntry=0; iEntry<map->GetEntriesFast(); ++iEntry)
+    //---read list of IOV and add underflow and overflow IOVs if file exist
+    //---otherwise make only one IOV (data will still be split in runs).
+    TFile* file = TFile::Open(iovFile_.c_str(), "READ");
+    if(file->IsOpen())
     {
-        map->GetEntry(iEntry);
-        IOVBegins_.push_back(PhiSymRunLumi(firstRun, firstLumi));
-        IOVEnds_.push_back(PhiSymRunLumi(lastRun, lastLumi));
-        IOVTimes_.push_back(avg_time);
+        TTree* map = (TTree*)file->Get("outTree_barl");
+        int firstRun, lastRun;
+        int firstLumi, lastLumi;
+        double avg_time;
+        map->SetBranchAddress("firstRun", &firstRun);
+        map->SetBranchAddress("lastRun", &lastRun);
+        map->SetBranchAddress("firstLumi", &firstLumi);
+        map->SetBranchAddress("lastLumi", &lastLumi);
+        map->SetBranchAddress("unixTimeMean", &avg_time);
+        for(int iEntry=0; iEntry<map->GetEntriesFast(); ++iEntry)
+        {
+            map->GetEntry(iEntry);
+            IOVBegins_.push_back(PhiSymRunLumi(firstRun, firstLumi));
+            IOVEnds_.push_back(PhiSymRunLumi(lastRun, lastLumi));
+            IOVTimes_.push_back(avg_time);
+        }
+        file->Close();    
+        IOVBegins_.insert(IOVBegins_.begin(), PhiSymRunLumi(0, 0));
+        IOVEnds_.insert(IOVEnds_.begin(), PhiSymRunLumi(IOVBegins_[1].run, IOVBegins_[1].lumi-1));    
+        IOVBegins_.push_back(PhiSymRunLumi(IOVEnds_.back().run, IOVEnds_.back().lumi+1));
+        IOVEnds_.push_back(PhiSymRunLumi(10000000, 10000000));
+        IOVTimes_.insert(IOVTimes_.begin(), 0);
+        IOVTimes_.push_back(-1);
     }
-    file->Close();    
-    IOVBegins_.insert(IOVBegins_.begin(), PhiSymRunLumi(0, 0));
-    IOVEnds_.insert(IOVEnds_.begin(), PhiSymRunLumi(IOVBegins_[1].run, IOVBegins_[1].lumi-1));    
-    IOVBegins_.push_back(PhiSymRunLumi(IOVEnds_.back().run, IOVEnds_.back().lumi+1));
-    IOVEnds_.push_back(PhiSymRunLumi(10000000, 10000000));
-    IOVTimes_.insert(IOVTimes_.begin(), 0);
-    IOVTimes_.push_back(-1);
+    else
+    {
+        IOVBegins_.push_back(PhiSymRunLumi(0, 0));
+        IOVEnds_.push_back(PhiSymRunLumi(10000000, 10000000));
+        IOVTimes_.push_back(-1);
+    }
     
     //---output file
-    outFile_ = auto_ptr<CalibrationFile>(new CalibrationFile(&fs_->file()));    
+    outFile_ = auto_ptr<CalibrationFile>(new CalibrationFile(&fs_->file()));
 }
 
 void PhiSymMerger::endJob()
@@ -161,7 +174,11 @@ void PhiSymMerger::endJob()
     //---finalize outputs
     outFile_->cd();
     outFile_->eb_xstals.Write("eb_xstals");
+    outFile_->eb_xstals_even.Write("eb_even");
+    outFile_->eb_xstals_odd.Write("eb_odd");
     outFile_->ee_xstals.Write("ee_xstals");
+    outFile_->ee_xstals_even.Write("ee_even");
+    outFile_->ee_xstals_odd.Write("ee_odd");
 }
 
 void PhiSymMerger::endRun(edm::Run const& run, edm::EventSetup const& setup)
@@ -268,6 +285,10 @@ void PhiSymMerger::endLuminosityBlock(edm::LuminosityBlock const& lumi, edm::Eve
             continue;
         EBDetId ebXstal(recHit.GetRawId());
         ebXstals_[ebXstal.denseIndex()] += recHit;
+        if(thisRunLumi.lumi % 2 == 0)
+            ebXstalsEven_[ebXstal.denseIndex()] += recHit;
+        else
+            ebXstalsOdd_[ebXstal.denseIndex()] += recHit;
     }
     //---EE---
     //---fill the rings Et sum
@@ -277,8 +298,21 @@ void PhiSymMerger::endLuminosityBlock(edm::LuminosityBlock const& lumi, edm::Eve
             continue;
         EEDetId eeXstal(recHit.GetRawId());
         eeXstals_[eeXstal.denseIndex()] += recHit;
+        if(thisRunLumi.lumi % 2 == 0)
+            eeXstalsEven_[eeXstal.denseIndex()] += recHit;
+        else
+            eeXstalsOdd_[eeXstal.denseIndex()] += recHit;
     }
-
+    //---BeamSpot info---
+    //---update current sum, each bs lumi value is weighted by the number of events.
+    //---the means will be computed in FillOutput()
+    outFile_->eb_xstals.mean_bs_x += infoHandle_.product()->back().GetSum('X');
+    outFile_->eb_xstals.mean_bs_sigmax += infoHandle_.product()->back().GetSumSigma('X');
+    outFile_->eb_xstals.mean_bs_y += infoHandle_.product()->back().GetSum('Y');
+    outFile_->eb_xstals.mean_bs_sigmay += infoHandle_.product()->back().GetSumSigma('Y');
+    outFile_->eb_xstals.mean_bs_z += infoHandle_.product()->back().GetSum('Z');
+    outFile_->eb_xstals.mean_bs_sigmaz += infoHandle_.product()->back().GetSumSigma('Z');
+    
     //---keep track of the current lumi as last lumi of the block
     outFile_->eb_xstals.end[0] = thisRunLumi.run;
     outFile_->eb_xstals.end[1] = thisRunLumi.lumi;
@@ -289,19 +323,46 @@ void PhiSymMerger::endLuminosityBlock(edm::LuminosityBlock const& lumi, edm::Eve
 //---do not compute k-factors and IC, just add up lumis
 void PhiSymMerger::FillOutput()
 {
+    //---compute beamspot position and spread means
+    outFile_->eb_xstals.mean_bs_x /= nEvents_;
+    outFile_->eb_xstals.mean_bs_sigmax /= nEvents_;
+    outFile_->eb_xstals.mean_bs_y /= nEvents_;
+    outFile_->eb_xstals.mean_bs_sigmay /= nEvents_;
+    outFile_->eb_xstals.mean_bs_z /= nEvents_;
+    outFile_->eb_xstals.mean_bs_sigmaz /= nEvents_;
+    outFile_->ee_xstals.mean_bs_x = outFile_->eb_xstals.mean_bs_x;
+    outFile_->ee_xstals.mean_bs_sigmax = outFile_->eb_xstals.mean_bs_sigmax;
+    outFile_->ee_xstals.mean_bs_y = outFile_->eb_xstals.mean_bs_y;
+    outFile_->ee_xstals.mean_bs_sigmay = outFile_->eb_xstals.mean_bs_sigmay;
+    outFile_->ee_xstals.mean_bs_z = outFile_->eb_xstals.mean_bs_z;
+    outFile_->ee_xstals.mean_bs_sigmaz = outFile_->eb_xstals.mean_bs_sigmaz;
+
     //---loop over the EB channels and store summed rechits
     for(uint32_t index=0; index<EBDetId::kSizeForDenseIndexing; ++index)
     {
         EBDetId ebXstal = EBDetId::detIdFromDenseIndex(index);
-        //---fill the output tree
+        //---fill the output trees
+        //---global
         outFile_->eb_xstals.n_events = nEvents_;
         outFile_->eb_xstals.rec_hit = &ebXstals_[index];
         outFile_->eb_xstals.ieta = ebXstal.ieta();
         outFile_->eb_xstals.iphi = ebXstal.iphi();
         outFile_->eb_xstals.Fill();
-
+        //---even lumis (or block of lumis)
+        outFile_->eb_xstals_even.rec_hit = &ebXstalsEven_[index];
+        outFile_->eb_xstals_even.ieta = ebXstal.ieta();
+        outFile_->eb_xstals_even.iphi = ebXstal.iphi();
+        outFile_->eb_xstals_even.Fill();
+        //---odd lumis (or block of lumis)
+        outFile_->eb_xstals_odd.rec_hit = &ebXstalsOdd_[index];
+        outFile_->eb_xstals_odd.ieta = ebXstal.ieta();
+        outFile_->eb_xstals_odd.iphi = ebXstal.iphi();
+        outFile_->eb_xstals_odd.Fill();
+        
         //---reset channel status and sum
         ebXstals_[index].Reset();
+        ebXstalsEven_[index].Reset();
+        ebXstalsOdd_[index].Reset();
     }
     //---loop over the EE channels and store summed rechits
     for(uint32_t index=0; index<EEDetId::kSizeForDenseIndexing; ++index)
@@ -315,14 +376,34 @@ void PhiSymMerger::FillOutput()
         outFile_->ee_xstals.ix = eeXstal.ix();
         outFile_->ee_xstals.iy = eeXstal.iy();
         outFile_->ee_xstals.Fill();            
+        //---even lumis (or block of lumis)
+        outFile_->ee_xstals_even.rec_hit = &eeXstalsEven_[index];
+        outFile_->ee_xstals_even.iring = outFile_->ee_xstals.iring;
+        outFile_->ee_xstals_even.ix = eeXstal.ix();
+        outFile_->ee_xstals_even.iy = eeXstal.iy();
+        outFile_->ee_xstals_even.Fill();
+        //---odd lumis (or block of lumis)
+        outFile_->ee_xstals_odd.rec_hit = &eeXstalsOdd_[index];
+        outFile_->ee_xstals_odd.iring = outFile_->ee_xstals.iring;
+        outFile_->ee_xstals_odd.ix = eeXstal.ix();
+        outFile_->ee_xstals_odd.iy = eeXstal.iy();
+        outFile_->ee_xstals_odd.Fill();
 
         //---reset channel status and sum
         eeXstals_[index].Reset();
+        eeXstalsEven_[index].Reset();
+        eeXstalsOdd_[index].Reset();
     }
     
-    //---reset counters and kFactor flag
+    //---reset global variables
     nEvents_=0;
     nBlocks_=0;
+    outFile_->eb_xstals.mean_bs_x = 0;
+    outFile_->eb_xstals.mean_bs_sigmax = 0;
+    outFile_->eb_xstals.mean_bs_y = 0;
+    outFile_->eb_xstals.mean_bs_sigmay = 0;
+    outFile_->eb_xstals.mean_bs_z = 0;
+    outFile_->eb_xstals.mean_bs_sigmaz = 0;
 }
 
 void PhiSymMerger::SearchLumiIOV(PhiSymRunLumi current)
